@@ -18,8 +18,12 @@ public class DreamEscape : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
-		});
+			"Slate",
+			"OnlineSubsystem",
+            "OnlineSubsystemSteam",
+            "OnlineSubsystemUtils",
+            "UMG"
+        });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 

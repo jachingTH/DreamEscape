@@ -38,8 +38,8 @@ protected:
 	bool bRecovering = false;
 
 	/** Default walk speed when not sprinting or recovering */
-	UPROPERTY(EditAnywhere, Category="Walk")
-	float WalkSpeed = 250.0f;
+	//UPROPERTY(EditAnywhere, Category="Walk")
+	//float WalkSpeed = 250.0f;
 
 	/** Time interval for sprinting stamina ticks */
 	UPROPERTY(EditAnywhere, Category="Sprint", meta = (ClampMin = 0, ClampMax = 1, Units = "s"))
@@ -53,8 +53,8 @@ protected:
 	float SprintTime = 3.0f;
 
 	/** Walk speed while sprinting */
-	UPROPERTY(EditAnywhere, Category="Sprint", meta = (ClampMin = 0, ClampMax = 10, Units = "cm/s"))
-	float SprintSpeed = 600.0f;
+	//UPROPERTY(EditAnywhere, Category="Sprint", meta = (ClampMin = 0, ClampMax = 10, Units = "cm/s"))
+	//float SprintSpeed = 600.0f;
 
 	/** Walk speed while recovering stamina */
 	UPROPERTY(EditAnywhere, Category="Recovery", meta = (ClampMin = 0, ClampMax = 10, Units = "cm/s"))
