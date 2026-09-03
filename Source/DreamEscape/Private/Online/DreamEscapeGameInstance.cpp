@@ -3,12 +3,21 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/GameUserSettings.h"
 
 UDreamEscapeGameInstance::UDreamEscapeGameInstance() {}
 
 void UDreamEscapeGameInstance::Init()
 {
     Super::Init();
+
+    // 저장된 해상도 및 화면 설정 자동 로드 및 화면 반영
+    if (UGameUserSettings* UserSettings = UGameUserSettings::GetGameUserSettings())
+    {
+        UserSettings->LoadSettings();
+        UserSettings->ApplyResolutionSettings(false);
+        UserSettings->ApplySettings(false);
+    }
 
     if (IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get())
     {
