@@ -77,36 +77,13 @@
 
 **정신력 4단계 (Sanity Phases)**
 
+
 | 단계 | 정신력 범위 | 화면 연출 | 게임플레이 영향 |
-| --- | --- | --- | --- |
-| **Phase 1 (안정기)**<br> | 100% ~ 70%
-
- | 정상 출력
-
- | 제약 없음
-
- |
-| **Phase 2 (전조)**<br> | 70% ~ 30%
-
- | 가장자리 노이즈 침범
-
- | 가짜 발소리 및 환청(Faking) 발생
-
- |
-| **Phase 3 (시야 잠식)**<br> | 30% ~ 1%
-
- | 16×9 그리드 암전, 터널 시야
-
- | 이동속도 디버프, 질주(Shift) 입력 차단
-
- |
-| **Phase 4 (완전 붕괴)**<br> | 0%
-
- | 조작 권한 박탈 (`DisableInput`)
-
- | 꿈에서 강제 퇴장 $\rightarrow$ 로비 강제 이탈
-
- |
+| :--- | :--- | :--- | :--- |
+| **Phase 1 (안정기)**[cite: 1] | 100% ~ 70%[cite: 1] | 정상 출력[cite: 1] | 제약 없음[cite: 1] |
+| **Phase 2 (전조)**[cite: 1] | 70% ~ 30%[cite: 1] | 화면 가장자리 노이즈 침범 확대[cite: 1] | 가짜 발소리 및 환청 (Faking)[cite: 1] |
+| **Phase 3 (시야 잠식)**[cite: 1] | 30% ~ 1%[cite: 1] | 암전 영역 확대, 터널 시야 (16x9 UV 그리드)[cite: 1] | 이동속도 디버프, 질주(Shift) 제한[cite: 1] |
+| **Phase 4 (완전 붕괴)**[cite: 1] | 0%[cite: 1] | 조작 권한 박탈 (`DisableInput`)[cite: 1] | 강제 이탈 (Forced Exit) → 로비 소환 및 지원 역할 전환[cite: 1] |
 
 **사망자 개입: 단말기 및 USB 물리 전송 시스템 (Forced Exit & USB Intervention)**
 
@@ -225,37 +202,13 @@
 
 ### 7. 시스템 요구 사양 (System Requirements)
 
-| 항목 | 최소 사양 (1080p 30FPS Low-Med)
-
- | 권장 사양 (1080p 60FPS High)
-
- |
-| --- | --- | --- |
-| **운영체제** | Windows 10 64-bit
-
- | Windows 10 / 11 64-bit
-
- |
-| **CPU** | Intel Core i5-8400 / AMD Ryzen 5 2600
-
- | Intel Core i7-10700K / AMD Ryzen 5 5600X
-
- |
-| **RAM** | 8 GB
-
- | 16 GB
-
- |
-| **GPU** | NVIDIA GTX 1060 (6GB) / AMD RX 580
-
- | NVIDIA RTX 3060 / AMD RX 6600 XT
-
- |
-| **조명 기술** | Lumen 비활성화 / 스태틱 라이팅 위주
-
- | 소프트웨어 Lumen 활성화
-
- |
+| 항목 | 최소 사양 (1080p, 30FPS, Low-Medium)[cite: 1] | 권장 사양 (1080p, 60FPS, High)[cite: 1] |
+| :--- | :--- | :--- |
+| **운영체제 (OS)** | Windows 10 64-bit[cite: 1] | Windows 10/11 64-bit[cite: 1] |
+| **프로세서 (CPU)** | Intel Core i5-8400 / AMD Ryzen 5 2600[cite: 1] | Intel Core i7-10700K / AMD Ryzen 5 5600X[cite: 1] |
+| **메모리 (RAM)** | 8 GB[cite: 1] | 16 GB[cite: 1] |
+| **그래픽 (GPU)** | NVIDIA GeForce GTX 1060 (6GB) / AMD Radeon RX 580[cite: 1] | NVIDIA GeForce RTX 3060 / AMD Radeon RX 6600 XT[cite: 1] |
+| **라이팅 / 렌더링** | Lumen 비활성화 / 스태틱 라이팅 위주[cite: 1] | 소프트웨어 Lumen 활성화[cite: 1] |
 
 ---
 
