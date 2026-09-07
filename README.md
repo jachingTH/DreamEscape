@@ -212,22 +212,7 @@
 
 ---
 
-### 8. 개발 마일스톤 및 핵심 KPI (Milestones & Validation)
-
-**Phase별 개발 일정**
-
-* **Phase 1 (1~4주차):** 리슨 서버 4인 이동 동기화, $1024\text{m} \times 1024\text{m}$ 맵 화이트박싱, 강제 이탈 기초 구현
-
-
-* **Phase 2 (5~8주차):** 로비 관전 단말기 UI, USB 상점 및 Server RPC 전송, 시야 차단 PPM 프로토타입
-
-
-* **Phase 3 (9~12주차):** 1차 FGT(H1/H2 가설 집중 검증), 밸런싱 핫픽스, 환경 에셋 1차 적용 및 Alpha 빌드 완성
-
-
-* **Phase 4 (13주차~ Beta):** H3 테마 결합 프로토타입 검증, 크리처 AI 도입, 렌더링 최적화
-
-
+### 8. 핵심 KPI (Milestones & Validation)
 
 **핵심 성과 지표 (KPI)**
 
@@ -241,3 +226,159 @@
 
 
 * **네트워크 지연:** USB 아이템 스폰 Server RPC 지연 100ms 이하, 세션당 크래시율 1% 미만 유지
+
+---
+
+### 9. C++ 코어 아키텍처 및 구현 명세 (Core Architecture & C++ Implementation)
+
+`DreamEscape`의 핵심 엔진 코드는 **관심사 분리(SoC)**, **이벤트 기반 느슨한 결합(Decoupled Event-Driven Architecture)**, **서버 권한 기반 네트워크 복제(Server-Authoritative Replication)** 원칙에 따라 설계되었습니다.
+
+#### 9.1 소스 코드 디렉터리 구조 (Source Structure)
+
+```
+Source/DreamEscape/
+├── Core Framework/
+│   ├── DreamEscapeCharacter           # 1인칭 공통 캐릭터 (스탯, 이동 속도, 퀵슬롯, HUD 연동)
+│   ├── DreamEscapePlayerController    # 기본 컨트롤러 (카메라 매니저 연동 및 입력 컨텍스트)
+│   ├── DreamEscapeGameMode            # 기본 베이스 게임모드 (추상 클래스)
+│   ├── DreamEscapeCameraManager       # 1인칭 상하 피치 시야각 제어 매니저
+│   ├── ItemData.h                     # 인벤토리/아이템 슬롯 데이터 구조체 (FInventorySlotData)
+│   └── MainMenu                       # 타이틀 화면 위젯 (게임 시작 델리게이트 브로드캐스트)
+│
+├── Online & Lobby Pipeline/
+│   ├── Public & Private/Online/
+│   │   └── DreamEscapeGameInstance    # OnlineSubsystemSteam 세션 생성/검색/참가 관리
+│   └── Lobby/
+│       ├── LobbyGameMode              # 로비 룰 제어, 맵 변경, 게임 시작(ServerTravel)
+│       ├── LobbyGameState             # 선택된 맵 동기화(Replication) 및 접속자 관리
+│       ├── LobbyPlayerState           # 플레이어 레디(Ready) 상태 동기화 및 Server RPC
+│       └── LobbyTypes.h               # 맵 선택 데이터(FMapSelectionData), 버튼 열거형
+│
+├── In-Game Multiplayer/
+│   ├── Public & Private/Game/
+│   │   └── InGameGameMode             # 심리스 트래블 이후 인게임 진입 및 스폰 처리
+│   └── Public & Private/Player/
+│       └── InGameCharacter            # 네트워크 복제 전용 캐릭터 (Replication, RPC)
+│
+└── In-Game HUD & Inventory UI/
+    └── Public & Private/
+        ├── DreamEscapeInGameHUD       # 인게임 메인 HUD 복합 위젯
+        ├── PlayerStatusWidget         # 체력/스태미나 실시간 프로그레스 바 UI
+        ├── InventoryBarWidget         # 6칸 퀵슬롯 컨테이너 위젯 (Slot_0 ~ Slot_5)
+        └── InventorySlotWidget        # 개별 아이콘/수량/선택 테두리 슬롯 위젯
+```
+
+#### 9.2 클래스 상속 계층도 (Class Hierarchy)
+
+```mermaid
+classDiagram
+    %% Core Framework
+    ACharacter <|-- ADreamEscapeCharacter
+    ACharacter <|-- AInGameCharacter
+    
+    APlayerController <|-- ADreamEscapePlayerController
+    APlayerCameraManager <|-- ADreamEscapeCameraManager
+    
+    AGameModeBase <|-- ADreamEscapeGameMode
+    AGameModeBase <|-- ALobbyGameMode
+    AGameModeBase <|-- AInGameGameMode
+    
+    AGameStateBase <|-- ALobbyGameState
+    APlayerState <|-- ALobbyPlayerState
+    UGameInstance <|-- UDreamEscapeGameInstance
+
+    %% UI Widgets
+    UUserWidget <|-- UMainMenu
+    UUserWidget <|-- UDreamEscapeInGameHUD
+    UUserWidget <|-- UPlayerStatusWidget
+    UUserWidget <|-- UInventoryBarWidget
+    UUserWidget <|-- UInventorySlotWidget
+```
+
+#### 9.3 온라인 세션 & 로비 파이프라인 (Online & Lobby Pipeline)
+
+Steam OnlineSubsystem(OSS) 기반 세션 관리부터 로비 대기실, 심리스 트래블(Seamless Travel)을 통한 인게임 진입까지 완결된 2단계 멀티플레이어 흐름을 지원합니다.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Host as 호스트 (방장)
+    participant GI as DreamEscapeGameInstance
+    participant LGM as LobbyGameMode
+    participant LGS as LobbyGameState
+    participant LPS as LobbyPlayerState
+    actor Client as 클라이언트 (참가자)
+    participant IGM as InGameGameMode
+
+    Host->>GI: HostSession() (Steam 리슨 서버 생성)
+    GI-->>Host: 로비 레벨 오픈 (?listen)
+    Client->>GI: FindGameSessions() ➔ JoinSession()
+    GI-->>Client: 로비 리슨 서버 접속 (ClientTravel)
+    
+    Note over Host,Client: 로비 대기실 (맵 선택 & 준비 상태 동기화)
+    Client->>LPS: Server_SetReady(true) (Reliable Server RPC)
+    LPS-->>LGS: 준비 상태 동기화 (bIsReady 리플리케이션)
+    Host->>LGM: NextMap() / PrevMap()
+    LGM-->>LGS: SelectedMapIndex 동기화 (OnRep_SelectedMapIndex)
+    
+    Note over Host: 전원 준비 완료 후 게임 시작
+    Host->>LGM: StartGame()
+    LGM->>IGM: ServerTravel(선택된 인게임 맵?listen)
+    IGM-->>Host: PostSeamlessTravel() ➔ 폰 스폰 및 HUD 초기화
+    IGM-->>Client: PostSeamlessTravel() ➔ 폰 스폰 및 HUD 초기화
+```
+
+* **`UDreamEscapeGameInstance`**: `IOnlineSessionPtr` 인터페이스를 통해 세션 생성(`HostSession`), 세션 탐색(`FindGameSessions`), 세션 조인(`JoinSession`)을 캡슐화합니다.
+* **`ALobbyGameMode` / `ALobbyGameState` / `ALobbyPlayerState`**: 로비 내 플레이어 레디 상태 및 선택 맵(`FMapSelectionData`)을 동기화하며, 전원 준비 완료 시 `ServerTravel`을 실행하여 로딩 단절 없는 맵 전환을 구현합니다.
+* **`AInGameCharacter`**: 네트워크 복제 무결성을 위해 `Server_PerformAction`에 거리 유효성 검증(`Validate`)을 적용하고, 서버 연산 후 `Multicast_PlayActionFX`를 통해 시각적 피드백을 전달하는 Server-Authoritative 구조를 취합니다.
+
+#### 9.4 이벤트 기반 인게임 HUD & 인벤토리 시스템 (Event-Driven HUD & Inventory)
+
+캐릭터 로직과 UMG 위젯 사이의 직접적인 하드 레퍼런스를 배제하고, 언리얼 엔진의 **C++ Dynamic Multicast Delegate**를 통해 1:1 이벤트 바인딩 방식으로 작동합니다.
+
+```mermaid
+graph TD
+    subgraph Character ["ADreamEscapeCharacter"]
+        Health["CurrentHealth"]
+        Stamina["CurrentStamina"]
+        InvSlots["InventorySlots (6칸)"]
+        SelectedIdx["CurrentSelectedSlotIndex"]
+        
+        DelH["OnHealthChanged"]
+        DelS["OnStaminaChanged"]
+        DelSel["OnSlotSelected"]
+        DelInv["OnInventorySlotUpdated"]
+    end
+
+    subgraph HUD ["UDreamEscapeInGameHUD"]
+        PSW["UPlayerStatusWidget<br/>(체력/스태미나 바)"]
+        IBW["UInventoryBarWidget<br/>(6칸 퀵슬롯 컨테이너)"]
+    end
+
+    subgraph SlotWidgets ["슬롯 위젯 (Slot_0 ~ Slot_5)"]
+        ISW["UInventorySlotWidget<br/>(아이콘/수량/하이라이트)"]
+    end
+
+    DelH -->|AddDynamic| PSW
+    DelS -->|AddDynamic| PSW
+    DelSel -->|AddDynamic| IBW
+    DelInv -->|AddDynamic| IBW
+    IBW --> ISW
+
+    PSW -.->|UI 실시간 갱신| UI_Stat["ProgressBar_Health / Stamina"]
+    ISW -.->|UI 실시간 갱신| UI_Slot["Image_ItemIcon / Border_SelectedHighlight"]
+```
+
+* **`UDreamEscapeInGameHUD`**: 인게임 화면의 메인 허브 위젯으로, `WBP_PlayerStatus`와 `WBP_InventoryBar`를 합성(`meta = (BindWidget)`)하여 단일 인터페이스로 관리합니다.
+* **`UPlayerStatusWidget`**: `Tick` 주기 연산 대신 `OnHealthChanged`, `OnStaminaChanged` 이벤트 발생 시점에만 프로그레스 바를 갱신하여 렌더링 비용을 최소화합니다.
+* **`UInventoryBarWidget` & `UInventorySlotWidget`**: 6칸의 퀵슬롯 핫바 구조(`Slot_0` ~ `Slot_5`)를 지니며, `ItemData.h`의 `FInventorySlotData`를 전달받아 슬롯 하이라이트 및 아이콘/수량을 동적으로 표현합니다.
+
+#### 9.5 핵심 테크니컬 하이라이트 (Technical Highlights)
+
+| 구분 | 적용 기술 및 설계 패턴 | 구현 효과 |
+| :--- | :--- | :--- |
+| **세션 & 네트워크** | Steam OSS + Seamless Travel | 별도의 외부 서버 없이 1~4인 P2P 리슨 서버 환경에서 로딩 단절 없는 맵 전환 지원 |
+| **보안 & 무결성** | Server RPC with `_Validate` | 클라이언트의 변조된 좌표나 비정상 액션 패킷을 서버 단에서 사전 필터링 |
+| **UI 성능 최적화** | Event-Driven Delegate Binding | 매 프레임 UI를 갱신하는 UMG 바인딩/Tick 폴링을 배제하여 프레임 드랍 방지 |
+| **모듈 확장성** | Data-Oriented Structs (`ItemData.h`, `LobbyTypes.h`) | 기획 데이터(아이템, 맵 목록)의 추가/변경 시 코드 수정 없이 데이터 테이블 및 블루프린트 확장 가능 |
+
